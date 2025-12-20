@@ -1,0 +1,324 @@
+/* ==========================================================
+   AI Learning Assistant – Modern Professional UI
+   Optimized & feature-preserved
+========================================================== */
+
+/* ---------- Theme Variables ---------- */
+:root {
+  --green: #7bea79;
+  --blue-iron: #68e0d2;
+  --blue-soft: #bdf7f8;
+  --pink: #f781f7;
+  --yellow: #fce390;
+
+  --text-dark: #0a1121;
+  --text-light: #ffffff;
+
+  --bg: #d7e2ee;
+  --card-bg: rgba(255, 255, 255, 0.78);
+  --card-border: rgba(10, 20, 30, 0.08);
+
+  --radius: 14px;
+  --shadow: 0 14px 46px rgba(15, 15, 30, 0.11);
+}
+
+/* ---------- Reset ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ---------- Base Layout ---------- */
+body {
+  min-height: 100vh;
+  padding: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-family: "Inter", "Poppins", sans-serif;
+  color: var(--text-dark);
+
+  background: linear-gradient(
+    135deg,
+    var(--blue-soft),
+    var(--pink),
+    var(--yellow)
+  );
+  background-size: 250% 250%;
+  animation: bgflow 18s ease infinite;
+}
+
+@keyframes bgflow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ---------- Chat Container ---------- */
+.chat-container {
+  width: 100%;
+  max-width: 920px;
+  height: 85vh;
+
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--card-border);
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow);
+}
+
+/* ---------- Header ---------- */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.app-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+
+  background: linear-gradient(135deg, var(--blue-iron), var(--blue-soft));
+}
+
+.app-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--blue-iron);
+}
+
+/* ---------- Chat Messages ---------- */
+.chat-box {
+  flex: 1;
+  overflow-y: auto;
+  padding: 30px;
+  margin-bottom: 12px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  border-radius: calc(var(--radius) - 1px);
+  scroll-behavior: smooth;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* ---------- Message Base ---------- */
+.message {
+  max-width: 80%;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  display: flex;
+  gap: 12px;
+
+  font-size: 15px;
+  line-height: 1.45;
+  word-break: break-word;
+
+  box-shadow: 0 8px 20px rgba(10, 12, 14, 0.04);
+}
+
+/* ---------- User Message ---------- */
+.message.user {
+  align-self: flex-end;
+  color: #fff;
+  background: var(--blue-iron);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-bottom-right-radius: 6px;
+}
+
+/* ---------- Bot Message ---------- */
+.message.bot {
+  align-self: flex-start;
+  background: #fff;
+  border: 1.25px solid rgba(6, 37, 36, 0.06);
+  border-bottom-left-radius: 6px;
+  box-shadow: 0 10px 28px rgba(6, 37, 36, 0.04);
+}
+
+/* ---------- File Message ---------- */
+.message.file {
+  align-self: flex-start;
+  background: #f4f8ff;
+  border: 1px dashed rgba(0, 0, 0, 0.15);
+}
+
+.file-meta {
+  font-size: 13px;
+  color: #444;
+}
+
+/* ---------- Avatar ---------- */
+.msg-avatar {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: bold;
+  border-radius: var(--radius);
+}
+
+.msg-avatar.user {
+  background: var(--yellow);
+  color: #000;
+}
+
+.msg-avatar.bot {
+  background: var(--green);
+  color: #000;
+}
+
+/* ---------- Message Actions ---------- */
+.msg-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.msg-actions button {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+
+  background: var(--blue-soft);
+  color: #000;
+}
+
+.msg-actions button:hover {
+  background: var(--green);
+}
+
+/* ---------- Input Area ---------- */
+.input-area {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+textarea#user-input {
+  flex: 1;
+  min-height: 50px;
+  padding: 12px 14px;
+
+  font-size: 15px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #fff;
+  resize: none;
+}
+
+textarea#user-input:focus {
+  outline: 2px solid rgba(104, 224, 210, 0.9);
+}
+
+/* ---------- Buttons ---------- */
+button {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+button.primary {
+  background: var(--green);
+  color: #000;
+}
+
+button.primary:hover {
+  background: var(--yellow);
+}
+
+button.ghost {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  color: var(--blue-iron);
+}
+
+button.ghost:hover {
+  background: var(--blue-soft);
+  color: #000;
+}
+
+.icon-btn {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--blue-iron);
+  color: #fff;
+}
+
+.icon-btn:hover {
+  background: var(--pink);
+  color: #000;
+}
+
+/* ---------- Bottom Controls ---------- */
+.bottom-controls {
+  margin-top: 12px;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ---------- Scrollbar ---------- */
+.chat-box::-webkit-scrollbar {
+  width: 10px;
+}
+
+.chat-box::-webkit-scrollbar-thumb {
+  border-radius: 12px;
+  background: linear-gradient(
+    180deg,
+    var(--blue-soft),
+    rgba(0, 0, 0, 0.08)
+  );
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 600px) {
+  .app-title {
+    font-size: 1rem;
+  }
+
+  .message {
+    max-width: 95%;
+    padding: 14px 16px;
+  }
+
+  .chat-box {
+    padding: 18px;
+    gap: 12px;
+  }
+
+  .bottom-controls {
+    gap: 8px;
+  }
+}

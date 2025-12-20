@@ -1,0 +1,14 @@
+flask
+python-dotenv
+google-genai==1.56.0
+PyPDF2
+pdf2image
+pillow
+pytesseract
+python-docx
+openpyxl
+werkzeug
+pandas
+numpy
+scikit-learn
+tenacity

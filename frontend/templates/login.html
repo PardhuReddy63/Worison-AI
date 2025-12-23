@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Login | AI Learning Assistant</title>
+
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #bdf7f8, #fce390);
+      margin: 0;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 380px;
+      padding: 28px;
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      text-align: center;
+      color: #333;
+    }
+
+    label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #444;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 6px;
+      margin-bottom: 14px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #68e0d2;
+      box-shadow: 0 0 0 2px rgba(104, 224, 210, 0.3);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: #68e0d2;
+      color: #000;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #7bea79;
+    }
+
+    .error {
+      color: #d33;
+      font-size: 14px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .footer {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .footer a {
+      color: #0077cc;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-card">
+    <h2>Login</h2>
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Email</label>
+      <input type="email" name="email" required>
+
+      <label>Password</label>
+      <input type="password" name="password" required>
+
+      <button type="submit">Login</button>
+    </form>
+
+    <div class="footer">
+      New user? <a href="/signup">Sign up</a>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,20 +1,4 @@
 # backend/model_wrapper.py
-"""
-Single-model wrapper for Google GenAI (Gemini).
-
-Exposes:
-- chat_response(user_message, history)
-- summarize(text, bullets)
-- keywords(text, top_k)
-- explain_pdf_text(text, bullets)
-- describe_image(image_path)
-- generate_embeddings(texts)
-
-Design goals:
-- ONE model only (MODEL_NAME)
-- Safe fallback when API key / SDK missing
-- Clean interface for app.py and utils.py
-"""
 
 import os
 import json
@@ -23,15 +7,18 @@ from typing import List, Optional, Any
 
 from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 
+
+# Configure logger for model wrapper operations
 logger = logging.getLogger("model_wrapper")
 logger.setLevel(logging.INFO)
 
-# --------------------------------------------------
-# Try importing GenAI SDK
-# --------------------------------------------------
+
+# Flags and references for GenAI SDK availability
 GENAI_AVAILABLE = False
 genai = None
 
+
+# Attempt to import Google GenAI SDK safely
 try:
     import google.genai as genai_pkg  # type: ignore
     genai = genai_pkg
@@ -40,18 +27,17 @@ try:
 except Exception as e:
     logger.warning("google.genai SDK not available: %s", e)
 
-# --------------------------------------------------
-# Environment config
-# --------------------------------------------------
+
+# Read API key and model name from environment variables
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 MODEL_NAME = os.getenv("MODEL_NAME", "models/gemini-2.0-flash-lite").strip()
 
+
+# Internal reference to the initialized model instance
 _MODEL: Optional[Any] = None
 
 
-# --------------------------------------------------
-# Initialize model
-# --------------------------------------------------
+# Initialize the Generative AI model if possible
 def _init_model():
     global _MODEL
     _MODEL = None
@@ -81,9 +67,7 @@ def _init_model():
     logger.error("Model initialization failed completely")
 
 
-# --------------------------------------------------
-# Helpers
-# --------------------------------------------------
+# Extract readable text content from different response formats
 def _extract_text(resp) -> Optional[str]:
     if resp is None:
         return None
@@ -122,6 +106,7 @@ def _extract_text(resp) -> Optional[str]:
         return None
 
 
+# Split long text into manageable chunks for model input
 def _chunk_text(text: str, max_chars: int = 3800) -> List[str]:
     if not text:
         return []
@@ -144,6 +129,7 @@ def _chunk_text(text: str, max_chars: int = 3800) -> List[str]:
     return chunks
 
 
+# Build generation configuration for text generation
 def _gen_config(max_tokens=512, temperature=0.18, top_p=0.9):
     try:
         if GENAI_AVAILABLE and hasattr(genai, "types"):
@@ -157,13 +143,19 @@ def _gen_config(max_tokens=512, temperature=0.18, top_p=0.9):
     return None
 
 
-@retry(wait=wait_exponential(min=1, max=8), stop=stop_after_attempt(3), retry=retry_if_exception_type(Exception))
+# Call the model with retry logic to handle transient failures
+@retry(
+    wait=wait_exponential(min=1, max=8),
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(Exception),
+)
 def _call_model(prompt, gen_cfg):
     if gen_cfg is not None:
         return _MODEL.generate_content(prompt, generation_config=gen_cfg)
     return _MODEL.generate_content(prompt)
 
 
+# Generate text output from the model with safety checks
 def _generate(prompt, max_tokens=512, temperature=0.18, top_p=0.9) -> str:
     if _MODEL is None:
         return "(fallback) Model not configured."
@@ -178,15 +170,13 @@ def _generate(prompt, max_tokens=512, temperature=0.18, top_p=0.9) -> str:
         return f"(error) {e}"
 
 
-# --------------------------------------------------
-# Public wrapper
-# --------------------------------------------------
+# Public-facing wrapper exposing AI capabilities
 class ModelWrapper:
     def __init__(self):
         self.available = _MODEL is not None
         logger.info("ModelWrapper available=%s", self.available)
 
-    # ---------------- Chat ----------------
+    # Generate a conversational response using recent history
     def chat_response(self, user_message: str, history: Optional[List[dict]] = None) -> str:
         if not self.available:
             return "(fallback) Model not available."
@@ -207,7 +197,7 @@ class ModelWrapper:
 
         return _generate("\n".join(lines), max_tokens=600)
 
-    # ---------------- Summarize ----------------
+    # Summarize long text into concise bullet points
     def summarize(self, text: str, bullets: int = 3) -> str:
         if not self.available:
             return "(fallback) Model not available."
@@ -226,7 +216,7 @@ class ModelWrapper:
         )
         return _generate(synth, max_tokens=300, temperature=0.12)
 
-    # ---------------- Keywords ----------------
+    # Extract important keywords from text
     def keywords(self, text: str, top_k: int = 8) -> List[str]:
         if not self.available:
             return []
@@ -244,7 +234,6 @@ class ModelWrapper:
         except Exception:
             pass
 
-        # fallback parse
         out = []
         for p in raw.replace("\n", ",").split(","):
             p = p.strip(" \"'[]{}")
@@ -254,7 +243,7 @@ class ModelWrapper:
                 break
         return out
 
-    # ---------------- Embeddings ----------------
+    # Generate vector embeddings for semantic search
     def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         if not self.available or not texts:
             return []
@@ -272,7 +261,7 @@ class ModelWrapper:
 
         return []
 
-    # ---------------- Explain PDF text ----------------
+    # Explain extracted PDF text in plain language
     def explain_pdf_text(self, text: str, bullets: int = 4) -> str:
         if not self.available:
             return "(fallback) Model not available."
@@ -296,7 +285,7 @@ class ModelWrapper:
         )
         return _generate(synth, max_tokens=450, temperature=0.12)
 
-    # ---------------- Describe image ----------------
+    # Generate a textual description for an image
     def describe_image(self, image_path: str) -> str:
         if not self.available:
             return "(fallback) Model not available."
@@ -313,12 +302,11 @@ class ModelWrapper:
         return _generate(f"Describe the image at path: {image_path}", max_tokens=300)
 
 
-# --------------------------------------------------
-# Singleton accessor
-# --------------------------------------------------
+# Singleton instance for shared model access
 _WRAPPER: Optional[ModelWrapper] = None
 
 
+# Retrieve or create the model wrapper instance
 def get_wrapper() -> ModelWrapper:
     global _WRAPPER
     if _WRAPPER is None:
@@ -327,5 +315,5 @@ def get_wrapper() -> ModelWrapper:
     return _WRAPPER
 
 
-# eager init for logs
+# Perform eager initialization to surface startup issues in logs
 _init_model()

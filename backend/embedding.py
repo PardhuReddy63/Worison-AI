@@ -1,16 +1,4 @@
 # backend/embedding.py
-"""
-Lightweight in-memory embedding index for AI Learning Assistant.
-
-Purpose:
-- Optional semantic search / RAG support
-- Uses ModelWrapper.generate_embeddings()
-- Safe to keep even if embeddings API is unavailable
-
-NOTE:
-- Currently NOT auto-wired into app.py
-- Intended for future extension (RAG, semantic file search)
-"""
 
 from typing import List, Optional, Dict
 import logging
@@ -20,29 +8,22 @@ from sklearn.neighbors import NearestNeighbors
 
 from model_wrapper import get_wrapper
 
+
+# Configure logger for embedding-related operations
 logger = logging.getLogger("embedding")
 logger.setLevel(logging.INFO)
 
 
+# In-memory embedding index supporting similarity search
 class EmbeddingIndex:
-    """
-    Simple in-memory embedding index using cosine similarity.
-
-    Design goals:
-    - No persistence (RAM only)
-    - Safe failure if embeddings are unavailable
-    - Small-scale testing (NOT production vector DB)
-    """
-
+    # Initialize storage for IDs, vectors, nearest-neighbor model, and model wrapper
     def __init__(self):
         self.ids: List[str] = []
         self.vectors: Optional[np.ndarray] = None
         self.nn: Optional[NearestNeighbors] = None
         self.wrapper = get_wrapper()
 
-    # --------------------------------------------------
-    # Add texts to index
-    # --------------------------------------------------
+    # Add a list of texts and optional IDs into the embedding index
     def add(self, texts: List[str], ids: Optional[List[str]] = None) -> None:
         if not texts:
             return
@@ -65,9 +46,7 @@ class EmbeddingIndex:
 
         self._rebuild_index()
 
-    # --------------------------------------------------
-    # Build / rebuild nearest-neighbor index
-    # --------------------------------------------------
+    # Create or refresh the nearest-neighbor search structure
     def _rebuild_index(self) -> None:
         if self.vectors is None or len(self.vectors) == 0:
             self.nn = None
@@ -80,18 +59,8 @@ class EmbeddingIndex:
         )
         self.nn.fit(self.vectors)
 
-    # --------------------------------------------------
-    # Query index
-    # --------------------------------------------------
+    # Query the index using a text input and return similarity results
     def query(self, text: str, top_k: int = 5) -> List[Dict[str, float]]:
-        """
-        Query the index using a text string.
-
-        Returns:
-        [
-          { "id": <id>, "score": <cosine_distance> }
-        ]
-        """
         if not text or not self.nn:
             return []
 
@@ -119,20 +88,12 @@ class EmbeddingIndex:
             return []
 
 
-# --------------------------------------------------
-# Optional global index (lazy use)
-# --------------------------------------------------
+# Global singleton instance for shared embedding index usage
 _GLOBAL_INDEX: Optional[EmbeddingIndex] = None
 
 
+# Retrieve or create the global embedding index instance
 def get_embedding_index() -> EmbeddingIndex:
-    """
-    Singleton accessor for embedding index.
-
-    Safe:
-    - Creates index only when called
-    - Does nothing if embeddings are unavailable
-    """
     global _GLOBAL_INDEX
     if _GLOBAL_INDEX is None:
         _GLOBAL_INDEX = EmbeddingIndex()

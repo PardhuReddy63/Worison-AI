@@ -1,14 +1,34 @@
-flask
-python-dotenv
-google-genai==1.56.0
-PyPDF2
-pdf2image
-pillow
-pytesseract
-python-docx
-openpyxl
-werkzeug
-pandas
-numpy
-scikit-learn
-tenacity
+# Core web framework
+Flask>=2.3
+
+# Environment variables
+python-dotenv>=1.0
+
+# CORS support
+flask-cors>=4.0
+
+# Database (SQLite is stdlib, no package needed)
+
+# AI / GenAI
+google-generativeai>=0.3
+
+# Retry logic
+tenacity>=8.2
+
+# OCR & document processing
+pytesseract>=0.3
+Pillow>=10.0
+pdf2image>=1.16
+PyPDF2>=3.0
+python-docx>=1.0
+pandas>=2.0
+openpyxl>=3.1
+
+# Embeddings / similarity search
+numpy>=1.24
+scikit-learn>=1.3
+
+# Security (recommended)
+bcrypt>=4.1
+flask-wtf>=1.2
+flask-limiter>=3.5

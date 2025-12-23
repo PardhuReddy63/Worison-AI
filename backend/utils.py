@@ -1,16 +1,4 @@
-"""
-backend/utils.py
-
-Purpose:
-- Text extraction utilities (PDF, DOCX, TXT, CSV/XLSX, Images)
-- OCR fallback for scanned PDFs and images
-- High-level helpers for summarize, explain, keywords
-
-This file is fully coordinated with:
-- app.py
-- model_wrapper.py
-- ocr.py
-"""
+# backend/utils.py
 
 import os
 from typing import List, Dict, Any, Optional
@@ -18,19 +6,13 @@ from typing import List, Dict, Any, Optional
 from model_wrapper import get_wrapper
 from ocr import pdf_to_text_via_ocr, image_file_to_text
 
-# Initialize model wrapper (safe even if model unavailable)
+
+# Initialize the shared model wrapper instance
 _model = get_wrapper()
 
 
-# --------------------------------------------------
-# Internal helpers
-# --------------------------------------------------
-
+# Split long text into manageable chunks for safe model processing
 def _chunk_text(text: str, max_chars: int = 3800) -> List[str]:
-    """
-    Split long text into reasonably coherent chunks so the model
-    can process them safely.
-    """
     if not text:
         return []
 
@@ -60,19 +42,10 @@ def _chunk_text(text: str, max_chars: int = 3800) -> List[str]:
     return chunks
 
 
-# --------------------------------------------------
-# Text extraction
-# --------------------------------------------------
-
+# Extract readable text from a PDF file with OCR fallback
 def extract_text_from_pdf(path: str, use_ocr: bool = True) -> str:
-    """
-    Extract text from PDF:
-    1) Try PyPDF2 (fast, text-based PDFs)
-    2) Fallback to OCR for scanned PDFs
-    """
     text = ""
 
-    # Attempt PyPDF2 first
     try:
         from PyPDF2 import PdfReader
         reader = PdfReader(path)
@@ -86,7 +59,6 @@ def extract_text_from_pdf(path: str, use_ocr: bool = True) -> str:
     except Exception:
         text = ""
 
-    # OCR fallback
     if not text.strip() and use_ocr:
         try:
             text = pdf_to_text_via_ocr(path, dpi=200)
@@ -102,8 +74,8 @@ def extract_text_from_pdf(path: str, use_ocr: bool = True) -> str:
     return text.strip()
 
 
+# Extract text from Microsoft Word documents
 def extract_text_from_docx(path: str) -> str:
-    """Extract text from DOCX using python-docx."""
     try:
         import docx
         doc = docx.Document(path)
@@ -112,8 +84,8 @@ def extract_text_from_docx(path: str) -> str:
         return ""
 
 
+# Read plain text files safely with UTF-8 fallback
 def extract_text_from_txt(path: str) -> str:
-    """Read plain text files safely."""
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             return f.read().strip()
@@ -121,8 +93,8 @@ def extract_text_from_txt(path: str) -> str:
         return ""
 
 
+# Extract a short preview of CSV or Excel files
 def extract_text_from_csv_or_excel(path: str) -> str:
-    """Read CSV/XLSX into a short preview string."""
     try:
         import pandas as pd
         ext = os.path.splitext(path)[1].lower()
@@ -135,8 +107,8 @@ def extract_text_from_csv_or_excel(path: str) -> str:
         return ""
 
 
+# Perform OCR on an image file and return extracted text
 def extract_text_from_image(path: str) -> str:
-    """OCR for images using Tesseract."""
     try:
         text = image_file_to_text(path) or ""
         if not text:
@@ -146,15 +118,8 @@ def extract_text_from_image(path: str) -> str:
         return "(error) Image OCR failed."
 
 
-# --------------------------------------------------
-# High-level helpers used by app.py
-# --------------------------------------------------
-
+# Summarize text using the model wrapper with safe fallback
 def summarize_text(text: str, bullets: int = 3) -> str:
-    """
-    Summarize any text using the model wrapper.
-    Safe fallback if model unavailable.
-    """
     if not text or not text.strip():
         return "(info) No text to summarize."
 
@@ -164,10 +129,8 @@ def summarize_text(text: str, bullets: int = 3) -> str:
         return f"(error) Summarization failed: {e}"
 
 
+# Extract keywords from text using the model wrapper
 def extract_keywords(text: str, top_k: int = 8) -> List[str]:
-    """
-    Extract keywords from text using model wrapper.
-    """
     if not text or not text.strip():
         return []
 
@@ -177,18 +140,12 @@ def extract_keywords(text: str, top_k: int = 8) -> List[str]:
         return []
 
 
+# Explain a PDF by summarizing chunks and synthesizing a final explanation
 def explain_pdf_text_only(
     path: str,
     bullets: int = 4,
     chunk_max_chars: int = 3800
 ) -> str:
-    """
-    Explain a PDF by:
-    - Extracting text
-    - Chunking
-    - Summarizing chunks
-    - Synthesizing final explanation
-    """
     text = extract_text_from_pdf(path, use_ocr=True)
     if not text or text.startswith("(error)"):
         return text
@@ -211,19 +168,13 @@ def explain_pdf_text_only(
         return f"(error) Final explanation failed: {e}"
 
 
+# Backward-compatible PDF explanation helper returning partials and final output
 def explain_pdf(
     path: Optional[str] = None,
     text: Optional[str] = None,
     bullets: int = 4,
     chunk_max_chars: int = 3800
 ) -> Dict[str, Any]:
-    """
-    Backward-compatible helper returning:
-    {
-      "partials": [...],
-      "final": "..."
-    }
-    """
     if text is None:
         if not path:
             return {

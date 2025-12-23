@@ -1,11 +1,4 @@
 # backend/app.py
-"""
-Main Flask app for AI Learning Assistant
-- Chat (normal + streaming)
-- File upload (treated as conversation turns)
-- File explanation / summarization
-- Conversation persistence
-"""
 
 import os
 import uuid
@@ -13,23 +6,27 @@ import json
 import time
 import logging
 from flask import (
-    Flask,
-    render_template,
-    request,
-    jsonify,
-    send_from_directory,
-    Response,
+    Flask, session, redirect,
+    render_template, request, jsonify,
+    send_from_directory, Response
 )
+from database import init_db
+from auth import register_user, authenticate_user, validate_password
+from chat_store import save_message, load_conversation as db_load_conversation
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from jinja2 import TemplateNotFound
 from flask_cors import CORS
+from flask_wtf.csrf import CSRFProtect, generate_csrf
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
-# --------------------------------------------------
-# Environment & logging
-# --------------------------------------------------
+
+# Load environment variables from .env file
 load_dotenv()
 
+
+# Configure application-wide logging
 logger = logging.getLogger("ai-assistant")
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
@@ -39,9 +36,8 @@ handler.setFormatter(
 if not logger.handlers:
     logger.addHandler(handler)
 
-# --------------------------------------------------
-# Internal imports
-# --------------------------------------------------
+
+# Import model wrapper and utility functions used for text extraction and processing
 from model_wrapper import get_wrapper
 from utils import (
     extract_text_from_pdf,
@@ -54,24 +50,38 @@ from utils import (
     extract_keywords,
 )
 
-# --------------------------------------------------
-# Flask setup
-# --------------------------------------------------
+
+# Initialize Flask application with frontend paths
 app = Flask(
     __name__,
     static_folder="../frontend/static",
     template_folder="../frontend/templates",
 )
 
+# Enable Cross-Origin Resource Sharing
 CORS(app)
 
+# Enable CSRF protection (exempt JSON API endpoints where appropriate)
+csrf = CSRFProtect(app)
+
+# Make `csrf_token()` available in Jinja templates
+app.jinja_env.globals["csrf_token"] = generate_csrf
+
+# Rate limiter to protect endpoints from abuse
+limiter = Limiter(get_remote_address, app=app, default_limits=["200 per hour"])
+
+# Disable static file caching and set upload size limit
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
-app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024  # 20 MB upload limit
+app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 app.jinja_env.globals["static_version"] = str(int(time.time()))
 
-# --------------------------------------------------
-# Storage directories
-# --------------------------------------------------
+# Session secret (required for login)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
+
+# Initialize database tables
+init_db()
+
+# Determine a safe, OS-independent directory for persistent storage
 def get_storage_dir():
     name = "ai-learning-assistant"
     try:
@@ -90,6 +100,7 @@ def get_storage_dir():
         return fallback
 
 
+# Create base storage paths for conversations and extracted file text
 STORAGE_DIR = get_storage_dir()
 CONVERSATIONS_DIR = os.path.join(STORAGE_DIR, "conversations")
 FILES_DIR = os.path.join(STORAGE_DIR, "files")
@@ -97,13 +108,14 @@ FILES_DIR = os.path.join(STORAGE_DIR, "files")
 os.makedirs(CONVERSATIONS_DIR, exist_ok=True)
 os.makedirs(FILES_DIR, exist_ok=True)
 
-# --------------------------------------------------
-# Upload config
-# --------------------------------------------------
+
+# Configure upload directory used by Flask
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
+
+# Define allowed file extensions for uploads
 ALLOWED_EXTENSIONS = {
     "pdf",
     "txt",
@@ -122,40 +134,20 @@ ALLOWED_EXTENSIONS = {
     "webm",
 }
 
+
+# Validate file extension before accepting upload
 def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-# --------------------------------------------------
-# Conversation persistence
-# --------------------------------------------------
-def save_conversation(history):
-    try:
-        path = os.path.join(CONVERSATIONS_DIR, "conversation.json")
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(history, f, indent=2)
-    except Exception as e:
-        logger.exception("Failed to save conversation: %s", e)
 
 
-def load_conversation():
-    path = os.path.join(CONVERSATIONS_DIR, "conversation.json")
-    if not os.path.exists(path):
-        return []
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return []
-
-
-# --------------------------------------------------
-# File name mapping (original → unique)
-# --------------------------------------------------
+# Return path to file mapping metadata
 def _file_map_path():
     return os.path.join(STORAGE_DIR, "file_map.json")
 
 
+# Store original file names mapped to generated unique names
 def save_file_mapping(original_name, unique_name):
     mapping = {}
     path = _file_map_path()
@@ -175,40 +167,87 @@ def save_file_mapping(original_name, unique_name):
         json.dump(mapping, f, indent=2)
 
 
-# --------------------------------------------------
-# Model wrapper
-# --------------------------------------------------
+# Initialize AI model wrapper instance
 wrapper = get_wrapper()
 
-# --------------------------------------------------
-# Routes
-# --------------------------------------------------
+
+# Serve main frontend page
 @app.route("/")
 def index():
-    try:
-        return render_template("index.html")
-    except TemplateNotFound:
-        return "<h3>index.html not found</h3>"
+    if "user_id" not in session:
+        return redirect("/login")
+    return render_template("index.html", user_email=session.get("email"))
 
 
+# Health check endpoint
 @app.route("/ping")
 def ping():
     return jsonify({"status": "ok"})
 
 
-# --------------------------------------------------
-# Chat (NON-streaming)
-# --------------------------------------------------
+@limiter.limit("5 per minute")
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "GET":
+        return render_template("login.html")
+
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
+
+    user_id = authenticate_user(email, password)
+    if not user_id:
+        return render_template("login.html", error="Invalid email or password")
+
+    session["user_id"] = user_id
+    session["email"] = email
+    return redirect("/")
+
+
+@limiter.limit("3 per minute")
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "GET":
+        return render_template("signup.html")
+
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
+
+    ok, error = validate_password(password)
+    if not ok:
+        return render_template("signup.html", error=error)
+
+    user_id = register_user(email, password)
+    if not user_id:
+        return render_template("signup.html", error="User already exists")
+
+    session["user_id"] = user_id
+    session["email"] = email
+    return redirect("/")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
+
+# Handle standard chat requests (non-streaming)
+@csrf.exempt
+@limiter.limit("30 per minute")
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json() or {}
     user_input = (data.get("message") or "").strip()
-    history = data.get("history") or []
+
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"response": "Login required"}), 401
+
+    history = db_load_conversation(user_id)
 
     if not user_input:
         return jsonify({"response": "(error) No input provided."})
 
-    # ---- FIX: support both `text` (frontend) and `content` (backend)
     for turn in reversed(history):
         if turn.get("role") == "file":
             file_id = turn.get("file_id")
@@ -229,8 +268,11 @@ def chat():
         else:
             reply = "(error) Model wrapper not available."
 
-        history.append({"role": "assistant", "content": reply})
-        save_conversation(history)
+        # Persist messages to database for multi-user support. We save the
+        # user's input and the assistant's reply to the DB for the current
+        # authenticated user.
+        save_message(user_id, "user", user_input)
+        save_message(user_id, "assistant", reply)
 
         return jsonify({"response": reply})
     except Exception as e:
@@ -238,14 +280,19 @@ def chat():
         return jsonify({"response": f"(error) {e}"})
 
 
-# --------------------------------------------------
-# Chat (STREAMING via SSE)
-# --------------------------------------------------
+# Handle chat responses using Server-Sent Events streaming
+@csrf.exempt
+@limiter.limit("30 per minute")
 @app.route("/stream_chat", methods=["POST"])
 def stream_chat():
     data = request.get_json() or {}
     user_input = (data.get("message") or "").strip()
-    history = data.get("history") or []
+
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"response": "Login required"}), 401
+
+    history = db_load_conversation(user_id)
 
     if not user_input:
         return jsonify({"response": "(error) No input provided."})
@@ -255,9 +302,16 @@ def stream_chat():
     else:
         full = "(error) Model wrapper not available."
 
+    # Persist the user input and the full assistant response to DB so the
+    # streaming path remains consistent with the non-streaming `/chat` route.
+    try:
+        save_message(user_id, "user", user_input)
+        save_message(user_id, "assistant", full)
+    except Exception:
+        logger.exception("Failed to persist streaming messages to DB")
+
     def gen():
         import re
-
         parts = re.split(r"(\.|\?|!|\n)", full)
         buf = ""
         for p in parts:
@@ -271,9 +325,8 @@ def stream_chat():
     return Response(gen(), content_type="text/event-stream")
 
 
-# --------------------------------------------------
-# Text utilities
-# --------------------------------------------------
+# Generate text summaries from raw input
+@csrf.exempt
 @app.route("/api/summarize", methods=["POST"])
 def api_summarize():
     data = request.get_json() or {}
@@ -294,6 +347,8 @@ def api_summarize():
         return jsonify({"summary": f"(error) {e}"})
 
 
+# Extract keywords from provided text
+@csrf.exempt
 @app.route("/api/keywords", methods=["POST"])
 def api_keywords():
     data = request.get_json() or {}
@@ -314,9 +369,24 @@ def api_keywords():
         return jsonify({"keywords": []})
 
 
-# --------------------------------------------------
-# File upload
-# --------------------------------------------------
+# Return per-user conversation history for frontend sidebar
+@csrf.exempt
+@app.route("/api/history")
+def api_history():
+    if "user_id" not in session:
+        return jsonify([])
+
+    try:
+        history = db_load_conversation(session["user_id"])
+        return jsonify(history)
+    except Exception:
+        logger.exception("Failed to load conversation history for user")
+        return jsonify([])
+
+
+# Accept and store uploaded files securely
+@csrf.exempt
+@limiter.limit("10 per minute")
 @app.route("/upload", methods=["POST"])
 def upload_file():
     if "file" not in request.files:
@@ -354,9 +424,7 @@ def upload_file():
         return jsonify({"error": str(e)}), 500
 
 
-# --------------------------------------------------
-# Extract & cache file text
-# --------------------------------------------------
+# Extract text from uploaded files and cache results
 def _get_file_text(filename):
     cache_path = os.path.join(FILES_DIR, f"{filename}.txt")
     if os.path.exists(cache_path):
@@ -395,9 +463,9 @@ def _get_file_text(filename):
     return "" if text.startswith("(error)") else text
 
 
-# --------------------------------------------------
-# Explain uploaded file
-# --------------------------------------------------
+# Generate explanation for uploaded documents
+@csrf.exempt
+@limiter.limit("10 per minute")
 @app.route("/explain_file", methods=["POST"])
 def explain_file():
     data = request.get_json() or {}
@@ -425,17 +493,13 @@ def explain_file():
         return jsonify({"error": str(e)})
 
 
-# --------------------------------------------------
-# Static uploaded files
-# --------------------------------------------------
+# Serve uploaded files directly
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 
-# --------------------------------------------------
-# Disable static caching
-# --------------------------------------------------
+# Disable browser caching for static assets
 @app.after_request
 def add_no_cache_headers(response):
     if request.path.startswith("/static/"):
@@ -445,9 +509,7 @@ def add_no_cache_headers(response):
     return response
 
 
-# --------------------------------------------------
-# Run
-# --------------------------------------------------
+# Start Flask development server
 if __name__ == "__main__":
     host = os.getenv("HOST", "127.0.0.1")
     port = int(os.getenv("PORT", 5000))

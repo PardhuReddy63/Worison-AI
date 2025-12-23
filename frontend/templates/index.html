@@ -1,41 +1,71 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Basic document metadata and responsive viewport setup -->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>AI Learning Assistant</title>
 
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png', v=static_version) }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=static_version) }}">
+    <!-- Application favicon -->
+    <link
+      rel="icon"
+      type="image/png"
+      href="{{ url_for('static', filename='img/favicon.png', v=static_version) }}"
+    >
+
+    <!-- Main stylesheet for layout and UI styling -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css', v=static_version) }}"
+    >
   </head>
 
   <body>
+    <!-- Main application container -->
     <div class="chat-container" role="main" aria-label="AI chat container">
 
+      <!-- Header section with branding and global actions -->
       <header>
         <div class="title">
           <div class="app-logo">AI</div>
           <div class="app-title">AI Learning Assistant</div>
         </div>
 
+        <!-- Header action buttons -->
         <div style="display:flex;gap:8px;align-items:center;">
           <button id="help-btn" class="icon-btn ghost">❓ Help</button>
           <button id="new-chat-btn" class="icon-btn ghost">🆕 New Chat</button>
-          <button id="regenerate-btn" class="icon-btn ghost">🔁 Regenerate</button>
+          <button id="regenerate-btn" class="icon-btn ghost">� Regenerate</button>
           <button id="download-convo-btn" class="icon-btn ghost">💾 Save</button>
+
+          <!-- Hidden file input for loading saved conversations -->
           <input id="load-convo-btn" type="file" style="display:none" accept=".json">
         </div>
       </header>
 
-      <section class="chat-box" aria-live="polite" role="log"></section>
+      <!-- Scrollable chat message area -->
+      <section
+        class="chat-box"
+        aria-live="polite"
+        role="log">
+      </section>
 
-      <!-- preview panel removed: uploads will appear inline as chat messages -->
+      <!-- Message input area -->
+      <div
+        class="input-area"
+        role="form"
+        aria-label="Message input area">
 
-      <div class="input-area" role="form" aria-label="Message input area">
+        <!-- User text input -->
+        <textarea
+          id="user-input"
+          placeholder="Type your question..."
+          aria-label="Type your question"
+          rows="1"
+          style="resize:none">
+        </textarea>
 
-        <textarea id="user-input" placeholder="Type your question..."
-                  aria-label="Type your question" rows="1" style="resize:none"></textarea>
-
+        <!-- Primary action buttons -->
         <div class="right-group" style="display:flex;flex-direction:column;gap:6px;">
           <div style="display:flex;gap:10px;">
             <button id="send-btn" class="primary">Send</button>
@@ -44,19 +74,34 @@
         </div>
       </div>
 
-      <div class="bottom-controls" 
-           style="display:flex;justify-content:center;gap:14px;align-items:center;margin-top:14px;flex-wrap:wrap;">
+      <!-- Bottom control panel for voice, TTS, and utilities -->
+      <div
+        class="bottom-controls"
+        style="display:flex;justify-content:center;gap:14px;align-items:center;margin-top:14px;flex-wrap:wrap;">
 
         <button id="voice-btn" class="icon-btn">🎤 Speak</button>
         <button id="stop-voice-btn" class="icon-btn">🔇 Mute</button>
         <button id="permanent-stop-btn" class="icon-btn">⏹️ Stop</button>
 
-        <label><input id="auto-tts" type="checkbox"> Auto TTS</label>
-
-        <label style="font-size:12px;color:#666;">
-          Speed <input id="tts-speed" type="range" min="0.5" max="2" step="0.1" value="1" style="width:90px">
+        <!-- Auto text-to-speech toggle -->
+        <label>
+          <input id="auto-tts" type="checkbox"> Auto TTS
         </label>
 
+        <!-- Text-to-speech speed control -->
+        <label style="font-size:12px;color:#666;">
+          Speed
+          <input
+            id="tts-speed"
+            type="range"
+            min="0.5"
+            max="2"
+            step="0.1"
+            value="1"
+            style="width:90px">
+        </label>
+
+        <!-- Accent selection for text-to-speech -->
         <select id="tts-accent" title="TTS accent">
           <option value="en-US">US</option>
           <option value="en-GB">UK</option>
@@ -64,19 +109,33 @@
           <option value="en-AU">Australia</option>
         </select>
 
+        <!-- Audio recording and playback controls -->
         <button id="record-audio-btn" class="icon-btn">🎙️ Record</button>
         <button id="pause-tts-btn" class="icon-btn">⏯ Pause</button>
 
+        <!-- Live character counter -->
         <label id="char-counter">0 chars</label>
-
       </div>
 
+      <!-- User guide access -->
       <div style="text-align:center;margin-top:10px;">
         <button id="guide-btn" class="icon-btn ghost">📘 User Guide</button>
       </div>
 
+      <!-- Add three-dotted menu with logout option -->
+      <div class="menu-container">
+        <button class="menu-btn">⋮</button>
+        <div class="menu-dropdown">
+          <a href="#" id="history-menu-item" class="menu-item">📜 History</a>
+          <a href="/logout" class="menu-item">Log Out</a>
+        </div>
+      </div>
+
     </div>
 
-    <script src="{{ url_for('static', filename='js/script.js', v=static_version) }}"></script>
+    <!-- Main frontend script -->
+    <script
+      src="{{ url_for('static', filename='js/script.js', v=static_version) }}">
+    </script>
   </body>
 </html>

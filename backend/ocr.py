@@ -1,13 +1,4 @@
 # backend/ocr.py
-"""
-OCR utilities for AI Learning Assistant
-
-Features:
-- PDF OCR using pdf2image + Tesseract
-- Image OCR using Pillow + Tesseract
-- Windows auto PATH setup for Poppler & Tesseract
-- Image preprocessing to improve OCR accuracy
-"""
 
 import os
 import logging
@@ -16,12 +7,13 @@ from typing import Optional
 from PIL import Image, ImageFilter, ImageOps
 import pytesseract
 
+
+# Configure logger for OCR-related operations
 logger = logging.getLogger("ocr")
 logger.setLevel(logging.INFO)
 
-# --------------------------------------------------
-# Optional pdf2image import
-# --------------------------------------------------
+
+# Attempt to import pdf2image utilities safely
 try:
     from pdf2image import convert_from_path, convert_from_bytes
 except Exception:
@@ -30,9 +22,7 @@ except Exception:
     logger.warning("pdf2image not available – PDF OCR disabled")
 
 
-# --------------------------------------------------
-# Windows: Auto-detect Poppler
-# --------------------------------------------------
+# Ensure Poppler binaries are available on PATH (Windows only)
 def _ensure_poppler_on_path():
     if os.name != "nt":
         return
@@ -56,9 +46,7 @@ def _ensure_poppler_on_path():
 _ensure_poppler_on_path()
 
 
-# --------------------------------------------------
-# Windows: Auto-detect Tesseract
-# --------------------------------------------------
+# Ensure Tesseract executable is configured (Windows only)
 def _ensure_tesseract_on_path():
     if os.name != "nt":
         return
@@ -78,17 +66,8 @@ def _ensure_tesseract_on_path():
 _ensure_tesseract_on_path()
 
 
-# --------------------------------------------------
-# Image preprocessing
-# --------------------------------------------------
+# Apply basic image preprocessing to improve OCR accuracy
 def preprocess_image(img: Image.Image) -> Image.Image:
-    """
-    Light preprocessing to improve OCR:
-    - grayscale
-    - contrast enhancement
-    - sharpening
-    - binary threshold
-    """
     try:
         img = img.convert("L")
         img = ImageOps.autocontrast(img)
@@ -101,20 +80,12 @@ def preprocess_image(img: Image.Image) -> Image.Image:
     return img
 
 
-# --------------------------------------------------
-# PDF OCR
-# --------------------------------------------------
+# Perform OCR on a PDF file by converting pages to images
 def pdf_to_text_via_ocr(
     path: str,
     dpi: int = 300,
     first_n_pages: Optional[int] = None,
 ) -> str:
-    """
-    Convert a PDF file to text using OCR.
-
-    Returns:
-        Extracted text or empty string on failure
-    """
     if not (convert_from_path or convert_from_bytes):
         logger.error("pdf2image not installed – cannot OCR PDFs")
         return ""
@@ -151,13 +122,8 @@ def pdf_to_text_via_ocr(
     return "\n\n".join(pages_text).strip()
 
 
-# --------------------------------------------------
-# Image OCR
-# --------------------------------------------------
+# Perform OCR on a single image file
 def image_file_to_text(path: str) -> str:
-    """
-    Extract text from an image file using Tesseract.
-    """
     try:
         if not getattr(pytesseract.pytesseract, "tesseract_cmd", None):
             logger.error("Tesseract not configured")

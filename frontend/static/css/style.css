@@ -1,9 +1,4 @@
-/* ==========================================================
-   AI Learning Assistant – Modern Professional UI
-   Optimized & feature-preserved
-========================================================== */
-
-/* ---------- Theme Variables ---------- */
+/* Global design tokens used across the UI */
 :root {
   --green: #7bea79;
   --blue-iron: #68e0d2;
@@ -22,14 +17,16 @@
   --shadow: 0 14px 46px rgba(15, 15, 30, 0.11);
 }
 
-/* ---------- Reset ---------- */
+
+/* Reset default browser spacing and box sizing */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* ---------- Base Layout ---------- */
+
+/* Base page layout and animated background */
 body {
   min-height: 100vh;
   padding: 26px;
@@ -50,17 +47,22 @@ body {
   animation: bgflow 18s ease infinite;
 }
 
+
+/* Background gradient animation */
 @keyframes bgflow {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
-/* ---------- Chat Container ---------- */
+
+/* Main chat application container */
 .chat-container {
   width: 100%;
   max-width: 920px;
-  height: 85vh;
+  /* Use most of the viewport while accounting for page padding */
+  height: calc(100vh - 52px);
+  max-height: 900px;
 
   display: flex;
   flex-direction: column;
@@ -74,7 +76,8 @@ body {
   box-shadow: var(--shadow);
 }
 
-/* ---------- Header ---------- */
+
+/* Top header containing logo and title */
 header {
   display: flex;
   justify-content: space-between;
@@ -82,6 +85,8 @@ header {
   margin-bottom: 14px;
 }
 
+
+/* Application logo styling */
 .app-logo {
   width: 40px;
   height: 40px;
@@ -97,15 +102,19 @@ header {
   background: linear-gradient(135deg, var(--blue-iron), var(--blue-soft));
 }
 
+
+/* Application title text */
 .app-title {
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--blue-iron);
 }
 
-/* ---------- Chat Messages ---------- */
+
+/* Scrollable chat message area */
 .chat-box {
-  flex: 1;
+  flex: 1 1 auto; /* take remaining vertical space */
+  min-height: 0;  /* prevents flex children from overflowing their container */
   overflow-y: auto;
   padding: 30px;
   margin-bottom: 12px;
@@ -119,7 +128,8 @@ header {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
-/* ---------- Message Base ---------- */
+
+/* Base message bubble styling */
 .message {
   max-width: 80%;
   padding: 16px 20px;
@@ -134,7 +144,8 @@ header {
   box-shadow: 0 8px 20px rgba(10, 12, 14, 0.04);
 }
 
-/* ---------- User Message ---------- */
+
+/* Styling for user-sent messages */
 .message.user {
   align-self: flex-end;
   color: #fff;
@@ -143,7 +154,8 @@ header {
   border-bottom-right-radius: 6px;
 }
 
-/* ---------- Bot Message ---------- */
+
+/* Styling for assistant/bot messages */
 .message.bot {
   align-self: flex-start;
   background: #fff;
@@ -152,19 +164,23 @@ header {
   box-shadow: 0 10px 28px rgba(6, 37, 36, 0.04);
 }
 
-/* ---------- File Message ---------- */
+
+/* Styling for uploaded file messages */
 .message.file {
   align-self: flex-start;
   background: #f4f8ff;
   border: 1px dashed rgba(0, 0, 0, 0.15);
 }
 
+
+/* File metadata text */
 .file-meta {
   font-size: 13px;
   color: #444;
 }
 
-/* ---------- Avatar ---------- */
+
+/* Avatar container for messages */
 .msg-avatar {
   width: 36px;
   height: 36px;
@@ -178,23 +194,30 @@ header {
   border-radius: var(--radius);
 }
 
+
+/* User avatar color scheme */
 .msg-avatar.user {
   background: var(--yellow);
   color: #000;
 }
 
+
+/* Bot avatar color scheme */
 .msg-avatar.bot {
   background: var(--green);
   color: #000;
 }
 
-/* ---------- Message Actions ---------- */
+
+/* Container for message-level action buttons */
 .msg-actions {
   display: flex;
   gap: 8px;
   margin-top: 6px;
 }
 
+
+/* Action buttons inside messages */
 .msg-actions button {
   padding: 6px 10px;
   font-size: 12px;
@@ -206,11 +229,14 @@ header {
   color: #000;
 }
 
+
+/* Hover state for message action buttons */
 .msg-actions button:hover {
   background: var(--green);
 }
 
-/* ---------- Input Area ---------- */
+
+/* Input section containing textarea and controls */
 .input-area {
   display: flex;
   gap: 12px;
@@ -219,6 +245,8 @@ header {
   border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
+
+/* User text input field */
 textarea#user-input {
   flex: 1;
   min-height: 50px;
@@ -231,11 +259,14 @@ textarea#user-input {
   resize: none;
 }
 
+
+/* Focus outline for text input */
 textarea#user-input:focus {
   outline: 2px solid rgba(104, 224, 210, 0.9);
 }
 
-/* ---------- Buttons ---------- */
+
+/* Base button styling */
 button {
   padding: 10px 14px;
   border-radius: var(--radius);
@@ -246,26 +277,36 @@ button {
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
+
+/* Primary action button */
 button.primary {
   background: var(--green);
   color: #000;
 }
 
+
+/* Hover state for primary button */
 button.primary:hover {
   background: var(--yellow);
 }
 
+
+/* Secondary/ghost button */
 button.ghost {
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.06);
   color: var(--blue-iron);
 }
 
+
+/* Hover state for ghost button */
 button.ghost:hover {
   background: var(--blue-soft);
   color: #000;
 }
 
+
+/* Icon-only button styling */
 .icon-btn {
   padding: 10px 12px;
   border-radius: 10px;
@@ -273,12 +314,15 @@ button.ghost:hover {
   color: #fff;
 }
 
+
+/* Hover state for icon buttons */
 .icon-btn:hover {
   background: var(--pink);
   color: #000;
 }
 
-/* ---------- Bottom Controls ---------- */
+
+/* Bottom utility controls container */
 .bottom-controls {
   margin-top: 12px;
   display: flex;
@@ -288,7 +332,22 @@ button.ghost:hover {
   flex-wrap: wrap;
 }
 
-/* ---------- Scrollbar ---------- */
+
+/* Adjust position of buttons and menu */
+.button-container {
+  position: absolute;
+  top: 10px;
+  left: calc(1cm);
+}
+
+.menu-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+
+/* Custom scrollbar for chat area */
 .chat-box::-webkit-scrollbar {
   width: 10px;
 }
@@ -302,7 +361,51 @@ button.ghost:hover {
   );
 }
 
-/* ---------- Mobile ---------- */
+
+/* Style for the three-dotted menu */
+.menu-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.menu-dropdown {
+  display: none;
+  position: absolute;
+  top: 30px;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+
+  width: 200px; /* Increased width for better visibility */
+}
+
+.menu-container:hover .menu-dropdown {
+  display: block;
+}
+
+.menu-item {
+  display: block;
+  padding: 10px;
+  text-decoration: none;
+  color: black;
+}
+
+.menu-item:hover {
+  background-color: #f0f0f0;
+}
+
+
+/* Responsive adjustments for mobile screens */
 @media (max-width: 600px) {
   .app-title {
     font-size: 1rem;

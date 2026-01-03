@@ -85,6 +85,11 @@ header {
   margin-bottom: 14px;
 }
 
+/* Ensure dropdown positions relative to header when menu is placed in header */
+header {
+  position: relative;
+}
+
 
 /* Application logo styling */
 .app-logo {
@@ -110,6 +115,12 @@ header {
   color: var(--blue-iron);
 }
 
+/* Title wrapper to keep logo + title together */
+.title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
 /* Scrollable chat message area */
 .chat-box {
@@ -170,6 +181,23 @@ header {
   align-self: flex-start;
   background: #f4f8ff;
   border: 1px dashed rgba(0, 0, 0, 0.15);
+}
+
+/* Message content layout */
+.msg-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.msg-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.msg-meta {
+  font-size: 12px;
+  color: rgba(10,12,14,0.45);
 }
 
 
@@ -305,6 +333,47 @@ button.ghost:hover {
   color: #000;
 }
 
+/* Styled three-dot menu used by JS */
+#menu-btn,
+.menu-btn {
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.06);
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+/* Menu dropdown used via #menu-dropdown */
+#menu-dropdown,
+.menu-dropdown {
+  position: absolute;
+  top: 46px;
+  right: 12px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(10,12,20,0.12);
+  overflow: hidden;
+  min-width: 180px;
+  z-index: 1200;
+}
+
+.menu.hidden {
+  display: none !important;
+}
+
+.menu button {
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+}
+
+.menu button:hover {
+  background: rgba(6,37,36,0.04);
+}
+
 
 /* Icon-only button styling */
 .icon-btn {
@@ -402,6 +471,77 @@ button.ghost:hover {
 
 .menu-item:hover {
   background-color: #f0f0f0;
+}
+
+
+/* Sidebar styling for chat history */
+.sidebar {
+  display: none; /* Sidebar removed from UI; keep CSS to avoid layout shifts */
+}
+
+
+/* Individual chat history item */
+.history-item {
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+
+/* Hover effect for history items */
+.history-item:hover {
+  background: #222;
+}
+
+
+/* History panel styling */
+.history-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 100vh;
+  background: #111;
+  color: white;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  z-index: 1000;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.history-panel h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.history-list {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.history-panel.show {
+  transform: translateX(0);
+}
+
+.history-item {
+  padding: 12px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.history-item:hover {
+  background: #222;
 }
 
 

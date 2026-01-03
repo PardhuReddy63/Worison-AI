@@ -4,7 +4,7 @@
     <!-- Basic document metadata and responsive viewport setup -->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>AI Learning Assistant</title>
+    <title>WORISON</title>
 
     <!-- Application favicon -->
     <link
@@ -28,7 +28,7 @@
       <header>
         <div class="title">
           <div class="app-logo">AI</div>
-          <div class="app-title">AI Learning Assistant</div>
+          <div class="app-title">WORISON</div>
         </div>
 
         <!-- Header action buttons -->
@@ -39,8 +39,17 @@
           <button id="download-convo-btn" class="icon-btn ghost">💾 Save</button>
 
           <!-- Hidden file input for loading saved conversations -->
-          <input id="load-convo-btn" type="file" style="display:none" accept=".json">
-        </div>
+            <input id="load-convo-btn" type="file" style="display:none" accept=".json">
+
+            <!-- Three-dot menu (history + logout inside dropdown) placed in header -->
+            <div class="menu-container" style="position:relative;">
+              <button id="menu-btn">⋮</button>
+              <div id="menu-dropdown" class="menu hidden">
+                <button id="history-btn">📜 History</button>
+                <button id="logout-btn">🚪 Logout</button>
+              </div>
+            </div>
+          </div>
       </header>
 
       <!-- Scrollable chat message area -->
@@ -57,13 +66,7 @@
         aria-label="Message input area">
 
         <!-- User text input -->
-        <textarea
-          id="user-input"
-          placeholder="Type your question..."
-          aria-label="Type your question"
-          rows="1"
-          style="resize:none">
-        </textarea>
+        <textarea id="user-input" placeholder="Type your question..." aria-label="Type your question" rows="1" style="resize:none"></textarea>
 
         <!-- Primary action buttons -->
         <div class="right-group" style="display:flex;flex-direction:column;gap:6px;">
@@ -122,13 +125,15 @@
         <button id="guide-btn" class="icon-btn ghost">📘 User Guide</button>
       </div>
 
-      <!-- Add three-dotted menu with logout option -->
-      <div class="menu-container">
-        <button class="menu-btn">⋮</button>
-        <div class="menu-dropdown">
-          <a href="#" id="history-menu-item" class="menu-item">📜 History</a>
-          <a href="/logout" class="menu-item">Log Out</a>
+      <!-- removed bottom-placed menu (moved to header) -->
+
+      <!-- History slide-in panel -->
+      <div id="history-panel" class="history-panel hidden">
+        <div class="history-header">
+          <h3>Your chats</h3>
+          <button id="close-history">✕</button>
         </div>
+        <div id="history-list"></div>
       </div>
 
     </div>

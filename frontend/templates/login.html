@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Login | AI Learning Assistant</title>
+  <title>Login | WORISON</title>
 
   <style>
     body {
@@ -45,6 +45,43 @@
       border: 1px solid #ccc;
       font-size: 14px;
     }
+
+    /* Password field wrapper with toggle button */
+    .pw-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    /* style the password input to match the screenshot */
+    .pw-wrap input {
+      padding-right: 56px; /* room for the eye button */
+      background: #e9f6ff;
+      border: 1px solid #d6eef8;
+      border-radius: 8px;
+      height: 44px;
+      line-height: 1.2;
+      padding-left: 14px;
+      box-shadow: none;
+    }
+
+    .pw-toggle {
+      position: absolute;
+      right: 6px;
+      background: #ffffff;
+      border: 1px solid #e6edf2;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      color: #6b7280;
+      box-shadow: 0 2px 6px rgba(16,24,40,0.04);
+    }
+    .pw-toggle:focus { outline: none; }
+    .pw-toggle:hover { background: #f7fbff; }
 
     input:focus {
       outline: none;
@@ -107,7 +144,10 @@
       <input type="email" name="email" required>
 
       <label>Password</label>
-      <input type="password" name="password" required>
+      <div class="pw-wrap">
+        <input id="password-input" type="password" name="password" required>
+        <button id="toggle-password" type="button" class="pw-toggle" aria-label="Show password">👁️</button>
+      </div>
 
       <button type="submit">Login</button>
     </form>
@@ -117,5 +157,29 @@
     </div>
   </div>
 
+  <script>
+    (function(){
+      const pwInput = document.getElementById('password-input');
+      const toggle = document.getElementById('toggle-password');
+      if (!pwInput || !toggle) return;
+
+      const eyeSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+      const eyeOffSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.09 21.09 0 0 1 5.06-6.14"></path><path d="M1 1l22 22"></path></svg>';
+
+      function updateIcon(isHidden) {
+        toggle.innerHTML = isHidden ? eyeSvg : eyeOffSvg;
+        toggle.setAttribute('aria-label', isHidden ? 'Show password' : 'Hide password');
+      }
+
+      // initialize
+      updateIcon(true);
+
+      toggle.addEventListener('click', function(){
+        const isPwd = pwInput.type === 'password';
+        pwInput.type = isPwd ? 'text' : 'password';
+        updateIcon(!isPwd);
+      });
+    })();
+  </script>
 </body>
 </html>

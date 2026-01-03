@@ -10,12 +10,16 @@ from flask import (
     render_template, request, jsonify,
     send_from_directory, Response
 )
-from database import init_db
+from database import init_db, get_db
 from auth import register_user, authenticate_user, validate_password
-from chat_store import save_message, load_conversation as db_load_conversation
+from chat_store import (
+    save_message,
+    load_conversation as db_load_conversation,
+    list_sessions,
+    load_session_messages,
+)
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
-from jinja2 import TemplateNotFound
 from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from flask_limiter import Limiter
@@ -38,8 +42,8 @@ if not logger.handlers:
 
 
 # Import model wrapper and utility functions used for text extraction and processing
-from model_wrapper import get_wrapper
-from utils import (
+from model_wrapper import get_wrapper  # noqa: E402
+from utils import (  # noqa: E402
     extract_text_from_pdf,
     extract_text_from_docx,
     extract_text_from_txt,
@@ -80,6 +84,11 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
 
 # Initialize database tables
 init_db()
+
+# Explicitly declare rate-limit storage (dev-safe)
+app.config.update(
+    RATELIMIT_STORAGE_URI="memory://"
+)
 
 # Determine a safe, OS-independent directory for persistent storage
 def get_storage_dir():
@@ -238,15 +247,29 @@ def logout():
 def chat():
     data = request.get_json() or {}
     user_input = (data.get("message") or "").strip()
+    session_id = data.get("session_id")
 
     user_id = session.get("user_id")
     if not user_id:
         return jsonify({"response": "Login required"}), 401
 
-    history = db_load_conversation(user_id)
+    history = load_session_messages(user_id, session_id) if session_id else []
 
     if not user_input:
         return jsonify({"response": "(error) No input provided."})
+
+    if not session_id:
+        title = user_input.strip()[:60]
+        session_id = str(uuid.uuid4())
+        try:
+            with get_db() as conn:
+                conn.execute(
+                    "INSERT INTO chat_sessions (id, user_id, title, created_at) VALUES (?, ?, ?, ?)",
+                    (session_id, user_id, title, int(time.time()))
+                )
+                conn.commit()
+        except Exception as e:
+            return jsonify({"response": f"(error) {e}"})
 
     for turn in reversed(history):
         if turn.get("role") == "file":
@@ -264,17 +287,17 @@ def chat():
 
     try:
         if hasattr(wrapper, "chat_response"):
-            reply = wrapper.chat_response(user_input, history=history)
+            bot_response = wrapper.chat_response(user_input, history=history)
         else:
-            reply = "(error) Model wrapper not available."
+            bot_response = "(error) Model wrapper not available."
 
         # Persist messages to database for multi-user support. We save the
         # user's input and the assistant's reply to the DB for the current
         # authenticated user.
-        save_message(user_id, "user", user_input)
-        save_message(user_id, "assistant", reply)
+        save_message(user_id, "user", user_input, session_id=session_id)
+        save_message(user_id, "assistant", bot_response, session_id=session_id)
 
-        return jsonify({"response": reply})
+        return jsonify({"session_id": session_id, "response": bot_response})
     except Exception as e:
         logger.exception("chat error: %s", e)
         return jsonify({"response": f"(error) {e}"})
@@ -287,12 +310,13 @@ def chat():
 def stream_chat():
     data = request.get_json() or {}
     user_input = (data.get("message") or "").strip()
+    session_id = data.get("session_id")
 
     user_id = session.get("user_id")
     if not user_id:
         return jsonify({"response": "Login required"}), 401
 
-    history = db_load_conversation(user_id)
+    history = load_session_messages(user_id, session_id) if session_id else []
 
     if not user_input:
         return jsonify({"response": "(error) No input provided."})
@@ -302,25 +326,20 @@ def stream_chat():
     else:
         full = "(error) Model wrapper not available."
 
-    # Persist the user input and the full assistant response to DB so the
-    # streaming path remains consistent with the non-streaming `/chat` route.
-    try:
-        save_message(user_id, "user", user_input)
-        save_message(user_id, "assistant", full)
-    except Exception:
-        logger.exception("Failed to persist streaming messages to DB")
+    save_message(user_id, "user", user_input, session_id=session_id)
+    save_message(user_id, "assistant", full, session_id=session_id)
 
     def gen():
         import re
-        parts = re.split(r"(\.|\?|!|\n)", full)
+        parts = re.split(r"(\\.|\\?|!|\\n)", full)
         buf = ""
         for p in parts:
             buf += p
             if len(buf) > 120:
-                yield f"data: {buf.strip()}\n\n"
+                yield f"data: {buf.strip()}\\n\\n"
                 buf = ""
         if buf:
-            yield f"data: {buf.strip()}\n\n"
+            yield f"data: {buf.strip()}\\n\\n"
 
     return Response(gen(), content_type="text/event-stream")
 
@@ -382,6 +401,24 @@ def api_history():
     except Exception:
         logger.exception("Failed to load conversation history for user")
         return jsonify([])
+
+
+# List all chat sessions for the logged-in user
+@csrf.exempt
+@app.route("/api/sessions")
+def api_sessions():
+    if "user_id" not in session:
+        return jsonify([])
+    return jsonify(list_sessions(session["user_id"]))
+
+
+# Load messages for a specific chat session
+@csrf.exempt
+@app.route("/api/session/<sid>")
+def api_session(sid):
+    if "user_id" not in session:
+        return jsonify([])
+    return jsonify(load_session_messages(session["user_id"], sid))
 
 
 # Accept and store uploaded files securely
@@ -497,6 +534,13 @@ def explain_file():
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon'
+    )
 
 
 # Disable browser caching for static assets

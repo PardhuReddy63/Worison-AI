@@ -39,6 +39,24 @@ def init_db():
     )
     """)
 
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS chat_sessions (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+
+    cur.execute("""
+    PRAGMA table_info(conversations)
+    """)
+    cols = [row["name"] for row in cur.fetchall()]
+    if "session_id" not in cols:
+        cur.execute("ALTER TABLE conversations ADD COLUMN session_id TEXT")
+
     conn.commit()
     conn.close()
 

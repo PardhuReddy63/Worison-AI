@@ -27,6 +27,11 @@
   const helpBtn = document.querySelector("#help-btn");
   const guideBtn = document.querySelector("#guide-btn");
 
+  // Assistant identity
+  const BOT_NAME = "WORISON";
+  const BOT_FULL_FORM =
+    "Wisdom-Oriented Responsive Intelligent Support & Operations Network";
+
   // Runtime state flags and shared references
   let recognizing = false;
   let recognition = null;
@@ -836,7 +841,12 @@
 
   // Display interactive help instructions
   function showHelp() {
-    const helpText = `👋 Welcome to AI Learning Assistant!
+    const helpText = `👋 Welcome to ${BOT_NAME}!
+
+${BOT_NAME} stands for:
+${BOT_FULL_FORM}.
+
+${BOT_NAME} is designed to help you learn, analyze, and solve problems efficiently.
 
 Here’s what I can do:
 
@@ -1058,7 +1068,9 @@ Pro tip: the help will auto-open for first-time users. You can always re-open th
 
     if (!chatBox || chatBox.children.length === 0) {
       addBotMessage(
-        "Hi there! 👋 I’m your AI assistant. You can chat, upload files, or talk to me."
+`Hi there! 👋 I’m ${BOT_NAME}.
+${BOT_FULL_FORM}.
+You can chat, upload files, or talk to me.`
       );
     }
   }
@@ -1075,36 +1087,49 @@ Pro tip: the help will auto-open for first-time users. You can always re-open th
     speakText
   };
 
-  // Ensure History button functionality remains unchanged
+  // Menu and history functionality
+  const menuBtn = document.querySelector("#menu-btn");
+  const menuDropdown = document.querySelector("#menu-dropdown");
+  const historyPanel = document.querySelector("#history-panel");
+  const historyList = document.querySelector("#history-list");
+  const closeHistoryBtn = document.querySelector("#close-history");
   const historyBtn = document.querySelector("#history-btn");
+  const logoutBtn = document.querySelector("#logout-btn");
 
-  historyBtn.addEventListener("click", () => {
-    chatBox.innerHTML = "";
-    loadHistoryFromServer();
-  });
+  if (menuBtn && menuDropdown) {
+    menuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      menuDropdown.classList.toggle("hidden");
+    });
+    document.addEventListener("click", (e) => {
+      if (!menuBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+        menuDropdown.classList.add("hidden");
+      }
+    });
+  }
 
-  // Add functionality for the logout option
-  const logoutLink = document.querySelector(".menu-item");
+  if (historyBtn) {
+    historyBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      historyPanel.classList.add("show");
+      await loadHistory();
+      if (menuDropdown) menuDropdown.classList.add("hidden");
+    });
+  }
 
-  logoutLink.addEventListener("click", (event) => {
-    event.preventDefault();
-    window.location.href = "/logout";
-  });
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.location.href = "/logout";
+    });
+  }
 
-  // Add functionality for the History option in the menu
-  const historyMenuItem = document.querySelector("#history-menu-item");
+  if (closeHistoryBtn && historyPanel) {
+    closeHistoryBtn.addEventListener("click", () => {
+      historyPanel.classList.remove("show");
+    });
+  }
 
-  historyMenuItem.addEventListener("click", (event) => {
-    event.preventDefault();
-    chatBox.innerHTML = "";
-    loadHistoryFromServer();
-  });
-
-  // Prevent text area from automatically writing space bars
-  const textArea = document.querySelector("#text-area");
-
-  textArea.addEventListener("input", (event) => {
-    const value = event.target.value;
-    event.target.value = value.replace(/\s+$/, ""); // Remove trailing spaces
-  });
+  // Note: trailing spaces are trimmed on send; do not modify user input on every keystroke
+  // (removing the input listener that was stripping spaces and interfering with typing)
 })();

@@ -182,7 +182,10 @@ class ModelWrapper:
             return "(fallback) Model not available."
 
         history = history or []
-        system = "You are a helpful, concise AI assistant."
+        system = (
+            "You are WORISON — Wisdom-Oriented Responsive Intelligent Support & Operations Network. "
+            "You are a helpful, precise, and reliable AI assistant focused on learning, analysis, and guidance."
+        )
 
         lines = [f"System: {system}"]
         for turn in history[-8:]:
